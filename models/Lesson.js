@@ -15,7 +15,9 @@ Lesson.add({
 	lessonNo: { type: Types.Number},
 	englishTitle: { type: String},
 	chineseTitle: { type: String},
+	hasListen: { type: Boolean},
+	hasTranslate: { type: Boolean},
 });
 
-Lesson.defaultColumns = 'courseNo, lessonNo, englishTitle, chineseTitle';
+Lesson.defaultColumns = 'courseNo, lessonNo, englishTitle, chineseTitle, hasListen, hasTranslate';
 Lesson.register();

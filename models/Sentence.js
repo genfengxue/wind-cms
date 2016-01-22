@@ -6,8 +6,7 @@ var Types = keystone.Field.Types;
  * ==========
  */
 
-var Sentence = new keystone.List('Sentence', {
-});
+var Sentence = new keystone.List('Sentence');
 
 Sentence.add({
 	courseNo: { type: Types.Number },
@@ -15,8 +14,8 @@ Sentence.add({
 	sentenceNo: {type: Types.Number },
 	english: { type: String },
 	chinese: { type: String },
-	audio: { type: String },
+	audios: { type: Types.TextArray },
 });
 
-Sentence.defaultColumns = 'courseNo, lessonNo, sentenceNo, english, chinese, audio';
+Sentence.defaultColumns = 'courseNo, lessonNo, sentenceNo, english, chinese, audios';
 Sentence.register();
