@@ -11,12 +11,12 @@ var Lesson = new keystone.List('Lesson', {
 });
 
 Lesson.add({
-	courseNo: { type: Types.Number},
-	lessonNo: { type: Types.Number},
-	englishTitle: { type: String},
-	chineseTitle: { type: String},
-	hasListen: { type: Boolean},
-	hasTranslate: { type: Boolean},
+	courseNo: { type: Types.Number, required: true, initial: true },
+	lessonNo: { type: Types.Number, required: true, initial: true },
+	englishTitle: { type: String, required: true, initial: true},
+	chineseTitle: { type: String, required: true, initial: true},
+	hasListen: { type: Boolean, default: true},
+	hasTranslate: { type: Boolean, default: true}
 });
 
 Lesson.defaultColumns = 'courseNo, lessonNo, englishTitle, chineseTitle, hasListen, hasTranslate';
