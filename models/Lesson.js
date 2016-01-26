@@ -15,9 +15,27 @@ Lesson.add({
 	lessonNo: { type: Types.Number, required: true, initial: true },
 	englishTitle: { type: String, required: true, initial: true},
 	chineseTitle: { type: String, required: true, initial: true},
-	hasListen: { type: Boolean, default: true},
-	hasTranslate: { type: Boolean, default: true}
+	hasListen: { type: Boolean, default: false},
+	hasTranslate: { type: Boolean, default: false},
+	audio: {
+		type: Types.LocalFile,
+		dest: '/data/files',
+		prefix: '/files',
+		filename: function(item, file){
+			var name = item.courseNo + '_' + item.lessonNo + '_audio';
+			return name + '.' + file.extension;
+		}
+	},
+	subtitle: {
+		type: Types.LocalFile,
+		dest: '/data/files',
+		prefix: '/files',
+		filename: function(item, file){
+			var name = item.courseNo + '_' + item.lessonNo + '_subtitle';
+			return name + '.' + file.extension;
+		}
+	}
 });
 
-Lesson.defaultColumns = 'courseNo, lessonNo, englishTitle, chineseTitle, hasListen, hasTranslate';
+Lesson.defaultColumns = 'courseNo, lessonNo, englishTitle, chineseTitle, hasListen, hasTranslate, audio, subtitle';
 Lesson.register();
