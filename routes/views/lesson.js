@@ -1,7 +1,11 @@
 var keystone = require('keystone');
 var Lesson = keystone.list('Lesson');
 var multer = require('multer');
-var upload = multer({ dest: '/uploads/' });
+var storage = multer.memoryStorage();
+var upload = multer({ storage: storage });
+// var upload = multer({ dest: 'uploads/' });
+var Promise = require('promise');
+
 exports = module.exports = function(req, res) {
 	
 	var view = new keystone.View(req, res);
@@ -15,18 +19,19 @@ exports = module.exports = function(req, res) {
 	
 	// On POST requests, add the Lesson item to the database
 	view.on('post', { action: 'lesson' }, function(next) {
-		if (!req.body.audio) {
-			locals.validationErrors.audio = '请上传音频';
-			console.log(req.body.audio);
-			return next();
-		}
-		if (!req.body.subtitle) {
-			locals.validationErrors.subtitle = '请上传字幕';
-			console.log(req.body.subtitle);
-			return next();
-		}
-		Lesson.model.findOne({courseNo: req.body.courseNo, lessonNo: req.body.lessonNo})
-		.exec().then(function(lesson) {
+		new Promise(function(resolve, reject) {
+			upload.fields([{ name: 'audio', maxCount: 1 }, { name: 'subtitle', maxCount: 1 }])(req, res, function(err) {
+				if (err) {
+					return reject(err);
+				}
+				console.log(req.body);
+				console.log(req);
+				resolve();
+			});
+		}).then(function() {
+			return Lesson.model.findOne({courseNo: req.body.courseNo, lessonNo: req.body.lessonNo})
+			.exec();
+		}).then(function(lesson) {
 			return lesson ? lesson : new Lesson.model();
 		}).then(function(lesson) {
 			updater = lesson.getUpdateHandler(req);
@@ -44,6 +49,8 @@ exports = module.exports = function(req, res) {
 					return res.redirect('/lesson');
 				}
 			});
+		}).catch(function(err) {
+			next(err);
 		});
 	});
 	

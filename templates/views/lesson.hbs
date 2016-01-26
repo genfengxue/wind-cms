@@ -8,8 +8,7 @@
 			<h3>Lesson is creating. Please wait for a moment then check it out.</h3>
 			<a href="/lesson">再建一个</a>
 			{{else}}
-			<form method="post">
-				<input type="hidden" name="id" value="{{formData.id}}">
+			<form method="post" enctype="multipart/form-data">
 				<input type="hidden" name="action" value="lesson">
 				<div class="form-group {{#if validationErrors.courseNo}}has-error{{/if}}">
 					<label>课程编号</label>
