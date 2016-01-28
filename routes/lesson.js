@@ -17,6 +17,8 @@ qiniu.conf.ACCESS_KEY = '07cMjNhILyyOUOy4mes6SWwuwRnytDqrb6Zdlq0U';
 qiniu.conf.SECRET_KEY = 'NvlDby_4PcpNdWRfyzb5pli2y9mjquzC6Rv2GDnx';
 var qiniuHost = 'http://7xqe0p.com1.z0.glb.clouddn.com';
 
+var runningTask;
+
 router.get('/', middleware.requireUser, function(req, res, next) {
 	var view = new keystone.View(req, res);
 	var locals = res.locals;
@@ -26,9 +28,15 @@ router.get('/', middleware.requireUser, function(req, res, next) {
 	locals.formData = req.body || {};
 	locals.validationErrors = {};
 	locals.lessonSubmitted = false;
+	locals.runningTask = runningTask;
 
 	view.render('lesson');
 });
+
+// 获取文件名字 /data/files/{课程号}_{课时号}_{句子号} /data/files/1_1_1
+function getNormalName(lesson, sub) {
+	return lesson.audio.path + '/' + lesson.courseNo + '_' + lesson.lessonNo + '_' + sub.id;
+}
 
 function sliceAudio(lesson) {
 	var promises = [];
@@ -45,16 +53,17 @@ function sliceAudio(lesson) {
 				sub.startTime = sub.startTime.replace(',', '.');
 				sub.endTime = sub.endTime.replace(',', '.');
 				var duration = moment.duration(sub.endTime) - moment.duration(sub.startTime);
+				var localPath = getNormalName(lesson, sub) + '.mp3';
 				ffmpeg(audioPath)
-				.output(lesson.audio.path + '/' + lesson.courseNo + '_' + lesson.lessonNo + '_' + sub.id + '.mp3')
+				.output(localPath)
 				.seekInput(sub.startTime)
 				.duration(duration / 1000)
 				.on('error', function(err) {
-					console.log('An error occurred: ' + err.message);
+					console.log(localPath + ' An error occurred: ' + err.message);
 					callback(err);
 				})
 				.on('end', function() {
-					console.log('Processing finished !');
+					console.log(localPath + ' Processing finished !');
 					callback(null, sub);
 				})
 				.run();
@@ -69,6 +78,105 @@ function sliceAudio(lesson) {
 	return promise;
 }
 
+// var rates = ['0.8', '1.1', '1.2', '1.4', '2.0']; // prod
+var rates = ['0.8', '1.4', '2.0']; // test
+
+// 生成变速文件，变速文件命名规则是 "正常文件名"+"@"+"1_1"+"后缀"，如 /data/files/1_1_1@1_1.mp3
+function speed(lesson, subs, rate) {
+	return new Promise(function(resolve, reject) {
+		async.series(subs.map(function(sub) {
+			return function(callback) {
+				var sentence = new Sentence.model();
+				sentence.courseNo = lesson.courseNo;
+				sentence.lessonNo = lesson.lessonNo;
+				sentence.sentenceNo = parseInt(sub.id, 10);
+				sentence.english = sub.text.split('\n')[0];
+				sentence.chinese = sub.text.split('\n')[1];
+				// audios: { type: Types.TextArray },
+				var normalName = getNormalName(lesson, sub);
+				var localPath = normalName + '.mp3';
+				var outputFilePath = normalName + '@' + rate.replace('.', '_') + '.mp3';
+				ffmpeg(localPath)
+				.output(outputFilePath).audioFilters('atempo=' + rate)
+				.on('error', function(err) {
+					console.log(outputFilePath + ' An error occurred: ' + err.message);
+					callback(null, sub);
+				})
+				.on('end', function() {
+					console.log(outputFilePath + ' Processing finished !');
+					callback(null, sub);
+				})
+				.run();
+			};
+		}), function(err, results) {
+			if (err) {
+				return reject(err);
+			}
+			resolve(results);
+		});
+	});
+}
+
+function speeds(lesson, subs) {
+	return new Promise(function(resolve, reject) {
+		async.series(rates.map(function(rate) {
+			return function(callback) {
+				speed(lesson, subs, rate).then(function(result) {
+					callback(null, result);
+				}, function(error) {
+					callback(error);
+				});
+			};
+		}), function(err, results) {
+			if (err) {
+				return reject(err);
+			}
+			resolve(results);
+		});
+	});
+}
+
+// store as aRSX23/data/files/1_1_1@1_1.mp3
+function uploadFiles(lesson, sentence) {
+	return new Promise(function(resolve, reject) {
+		var normalName = getNormalName(lesson, {id: sentence.sentenceNo}); 
+		var localPath = normalName + '.mp3';
+		var filePaths = rates.map(function(rate) {
+			return normalName + '@' + rate.replace('.', '_') + '.mp3';
+		});
+		filePaths.push(localPath);
+		var randomStr = randomstring.generate(6);
+		async.series(filePaths.map(function(filePath) {
+			return function(callback) {
+				setTimeout(function() {
+					var putPolicy = new qiniu.rs.PutPolicy('scott');
+					var uptoken = putPolicy.token();
+					var extra = new qiniu.io.PutExtra();
+					var qiniuPath = randomStr + filePath;
+					qiniu.io.putFile(uptoken,
+						qiniuPath,
+						filePath,
+						extra,
+						function(err, ret) {
+							if (err) {
+								console.log('upload error: ', err);
+								return callback(err);
+							}
+							console.log('uploaded: ', ret);
+							callback(null, ret);
+						}
+					);
+				}, 100);
+			};
+		}), function(err, results) {
+			if (err) {
+				return reject(err);
+			}
+			resolve(qiniuHost + '/' + randomStr + localPath);
+		});
+	});
+}
+
 function generateSentences(lesson, subs) {
 	return new Promise(function(resolve, reject) {
 		async.series(subs.map(function(sub) {
@@ -80,29 +188,19 @@ function generateSentences(lesson, subs) {
 				sentence.english = sub.text.split('\n')[0];
 				sentence.chinese = sub.text.split('\n')[1];
 				// audios: { type: Types.TextArray },
-				var putPolicy = new qiniu.rs.PutPolicy('scott');
-				var uptoken = putPolicy.token();
-				var extra = new qiniu.io.PutExtra();
-				var qiniuPath = 'content/audios/' + sentence.courseNo + '/' + sentence.lessonNo + '/' + sentence.sentenceNo + '/' + randomstring.generate(6) + '.mp3';
-				var localPath = lesson.audio.path + '/' + lesson.courseNo + '_' + lesson.lessonNo + '_' + sub.id + '.mp3';
-				qiniu.io.putFile(uptoken,
-					qiniuPath,
-					localPath,
-					extra,
-					function(err, ret) {
+				uploadFiles(lesson, sentence).then(function(url) {
+					sentence.audios = [url];
+					sentence.save(function(err, result) {
 						if (err) {
 							return callback(err);
 						}
-						sentence.audios = [qiniuHost + '/' + qiniuPath];
-						sentence.save(function(err, result) {
-							if (err) {
-								return callback(err);
-							}
-							callback(null, result);
-						})
+						callback(null, result);
+					})
+				}, function(err) {
+					if (err) {
+						return callback(err);
 					}
-				);
-
+				});
 			};
 		}), function(err, results) {
 			if (err) {
@@ -114,15 +212,19 @@ function generateSentences(lesson, subs) {
 }
 
 router.post('/', middleware.requireUser, function(req, res, next) {
-
+	if (runningTask) {
+		return res.redirect('/lesson');
+	}
 	var view = new keystone.View(req, res);
 	var locals = res.locals;
 	var theLesson;
+	var theSubs;
 	// Set locals
 	locals.section = 'lesson';
 	locals.formData = req.body || {};
 	locals.validationErrors = {};
 	locals.lessonSubmitted = false;
+
 	new Promise(function(resolve) {
 		resolve();
 	}).then(function() {
@@ -143,39 +245,28 @@ router.post('/', middleware.requireUser, function(req, res, next) {
 		req.flash('error', {detail: '课时未上传'});
 		throw new Error({detail: '课时未上传'});
 	})
-	// .then(function(lesson) {
-	// 	var putPolicy = new qiniu.rs.PutPolicy('scott');
-	// 	var uptoken = putPolicy.token();
-	// 	var extra = new qiniu.io.PutExtra();
-	// 	return new Promise((resolve, reject) => {
-	// 		qiniu.io.putFile(uptoken,
-	// 			'content/audios/' + lesson.audio.filename,
-	// 			lesson.audio.path + '/' + lesson.audio.filename,
-	// 			extra,
-	// 			(err, ret) => {
-	// 				if (err) {
-	// 					return reject(err);
-	// 				}
-	// 				return resolve(ret);
-	// 			}
-	// 		);
-	// 	});
-	// })
 	.then(function() {
+		runningTask = {courseNo: theLesson.courseNo, lessonNo: theLesson.lessonNo};
+		view.render('lesson');
 		return Sentence.model.remove({courseNo: theLesson.courseNo, lessonNo: theLesson.lessonNo}).exec();
 	})
 	.then(function() {
 		return sliceAudio(theLesson);
 	})
 	.then(function(subs) {
-		return generateSentences(theLesson, subs);
+		theSubs = subs;
+		return speeds(theLesson, theSubs);
+	})
+	.then(function() {
+		return generateSentences(theLesson, theSubs);
 	})
 	.then(function(sentences) {
 		console.log(sentences);
-		view.render('lesson');
+		runningTask = null;
 	})
 	.catch(function(err) {
-		next(err);
+		console.log(err);
+		runningTask = null;
 	});
 });
 

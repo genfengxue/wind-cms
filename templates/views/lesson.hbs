@@ -8,6 +8,9 @@
 			<h3>Lesson is processing. Please wait for a moment then check it out.</h3>
 			<a href="/lesson">再转一个</a>
 			{{else}}
+			{{#if runningTask}}
+			<div>正在转化 {{runningTask.courseNo}} - {{runningTask.lessonNo}}</div>
+			{{else}}
 			<form method="post">
 				<input type="hidden" name="action" value="lesson">
 				<div class="form-group {{#if validationErrors.courseNo}}has-error{{/if}}">
@@ -22,6 +25,7 @@
 					<button type="submit" class="btn btn-primary">Send</button>
 				</div>
 			</form>
+			{{/if}}
 			{{/if}}
 		</div>
 	</div>
