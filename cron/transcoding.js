@@ -34,12 +34,17 @@ function sliceAudio(lesson) {
 		async.series(srt.map(function(sub) {
 			return function(callback) {
 				sub.startTime = sub.startTime.replace(',', '.');
+				// 在时间轴前后不足
+				const before = 600;
+				const after = 300;
+				let startTime = moment.duration(sub.startTime) - before;
+				startTime = startTime > 0 ? startTime : 0;
 				sub.endTime = sub.endTime.replace(',', '.');
-				var duration = moment.duration(sub.endTime) - moment.duration(sub.startTime);
+				var duration = moment.duration(sub.endTime) - startTime + after;
 				var localPath = getNormalName(lesson, sub) + '.mp3';
 				ffmpeg(audioPath)
 				.output(localPath)
-				.seekInput(sub.startTime)
+				.seekInput(startTime / 1000)
 				.duration(duration / 1000)
 				.on('error', function(err) {
 					console.log(localPath + ' An error occurred: ' + err.message);
