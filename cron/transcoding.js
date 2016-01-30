@@ -18,31 +18,36 @@ qiniu.conf.SECRET_KEY = 'NvlDby_4PcpNdWRfyzb5pli2y9mjquzC6Rv2GDnx';
 const qiniuHost = 'http://7xqe0p.com1.z0.glb.clouddn.com';
 
 // 获取文件名字 /data/files/{课程号}_{课时号}_{句子号} /data/files/1_1_1
-function getNormalName(lesson, sub) {
-	return lesson.audio.path + '/' + lesson.courseNo + '_' + lesson.lessonNo + '_' + sub.id;
+function getNormalName(lesson, sub, type) {
+	return lesson[type].path + '/' + lesson.courseNo + '_' + lesson.lessonNo + '_' + sub.id;
 }
 
-function sliceAudio(lesson) {
-	var promises = [];
+function parseSrt(lesson) {
 	var srtPath = lesson.subtitle.path + '/' + lesson.subtitle.filename;
 	var data = fs.readFileSync(srtPath, 'utf8');
 	fs.writeFileSync(srtPath, data, 'utf8');
 	data = fs.readFileSync(srtPath, 'utf8');
 	var srt = parser.fromSrt(data);
-	var audioPath = lesson.audio.path + '/' + lesson.audio.filename;
+	return srt;
+}
+
+function slice(lesson, srt, type) {
+	const suffix = type == 'video' ? '.mp4' : '.mp3';
+	var promises = [];
+	var filePath = lesson[type].path + '/' + lesson[type].filename;
 	var promise = new Promise(function(resolve, reject) {
 		async.series(srt.map(function(sub) {
 			return function(callback) {
-				sub.startTime = sub.startTime.replace(',', '.');
-				// 在时间轴前后不足
+				const startTimeStr = sub.startTime.replace(',', '.');
+				const endTimeStr = sub.endTime.replace(',', '.');
+				// 在时间轴前后补足
 				const before = 600;
 				const after = 300;
-				let startTime = moment.duration(sub.startTime) - before;
+				let startTime = moment.duration(startTimeStr) - before;
 				startTime = startTime > 0 ? startTime : 0;
-				sub.endTime = sub.endTime.replace(',', '.');
-				var duration = moment.duration(sub.endTime) - startTime + after;
-				var localPath = getNormalName(lesson, sub) + '.mp3';
-				ffmpeg(audioPath)
+				var duration = moment.duration(endTimeStr) - startTime + after;
+				var localPath = getNormalName(lesson, sub, type) + suffix;
+				ffmpeg(filePath)
 				.output(localPath)
 				.seekInput(startTime / 1000)
 				.duration(duration / 1000)
@@ -70,7 +75,8 @@ function sliceAudio(lesson) {
 var rates = ['0.8', '1.4', '2.0']; // test
 
 // 生成变速文件，变速文件命名规则是 "正常文件名"+"@"+"1_1"+"后缀"，如 /data/files/1_1_1@1_1.mp3
-function speed(lesson, subs, rate) {
+function speed(lesson, subs, rate, type) {
+	const suffix = type == 'video' ? '.mp4' : '.mp3';
 	return new Promise(function(resolve, reject) {
 		async.series(subs.map(function(sub) {
 			return function(callback) {
@@ -80,21 +86,34 @@ function speed(lesson, subs, rate) {
 				sentence.sentenceNo = parseInt(sub.id, 10);
 				sentence.english = sub.text.split('\n')[0];
 				sentence.chinese = sub.text.split('\n')[1];
-				// audios: { type: Types.TextArray },
-				var normalName = getNormalName(lesson, sub);
-				var localPath = normalName + '.mp3';
-				var outputFilePath = normalName + '@' + rate.replace('.', '_') + '.mp3';
-				ffmpeg(localPath)
-				.output(outputFilePath).audioFilters('atempo=' + rate)
-				.on('error', function(err) {
-					console.log(outputFilePath + ' An error occurred: ' + err.message);
-					callback(null, sub);
-				})
-				.on('end', function() {
-					console.log(outputFilePath + ' Processing finished !');
-					callback(null, sub);
-				})
-				.run();
+				var normalName = getNormalName(lesson, sub, type);
+				var localPath = normalName + suffix;
+				var outputFilePath = normalName + '@' + rate.replace('.', '_') + suffix;
+				if (type === 'audio') {
+					ffmpeg(localPath)
+					.output(outputFilePath).audioFilters('atempo=' + rate)
+					.on('error', function(err) {
+						console.log(outputFilePath + ' An error occurred: ' + err.message);
+						callback(null, sub);
+					})
+					.on('end', function() {
+						console.log(outputFilePath + ' Processing finished !');
+						callback(null, sub);
+					})
+					.run();
+				} else {
+					ffmpeg(localPath)
+					.output(outputFilePath).complexFilter(['setpts='+ (1 / rate).toFixed(4) +'*PTS', 'atempo=' + rate])
+					.on('error', function(err) {
+						console.log(outputFilePath + ' An error occurred: ' + err.message);
+						callback(null, sub);
+					})
+					.on('end', function() {
+						console.log(outputFilePath + ' Processing finished !');
+						callback(null, sub);
+					})
+					.run();
+				}
 			};
 		}), function(err, results) {
 			if (err) {
@@ -105,11 +124,11 @@ function speed(lesson, subs, rate) {
 	});
 }
 
-function speeds(lesson, subs) {
+function speeds(lesson, subs, type) {
 	return new Promise(function(resolve, reject) {
 		async.series(rates.map(function(rate) {
 			return function(callback) {
-				speed(lesson, subs, rate).then(function(result) {
+				speed(lesson, subs, rate, type).then(function(result) {
 					callback(null, result);
 				}, function(error) {
 					callback(error);
@@ -125,12 +144,13 @@ function speeds(lesson, subs) {
 }
 
 // store as aRSX23/data/files/1_1_1@1_1.mp3
-function uploadFiles(lesson, sentence) {
+function uploadFiles(lesson, sentence, type) {
+	const suffix = type == 'video' ? '.mp4' : '.mp3';
 	return new Promise(function(resolve, reject) {
-		var normalName = getNormalName(lesson, {id: sentence.sentenceNo}); 
-		var localPath = normalName + '.mp3';
+		var normalName = getNormalName(lesson, {id: sentence.sentenceNo}, type); 
+		var localPath = normalName + suffix;
 		var filePaths = rates.map(function(rate) {
-			return normalName + '@' + rate.replace('.', '_') + '.mp3';
+			return normalName + '@' + rate.replace('.', '_') + suffix;
 		});
 		filePaths.push(localPath);
 		var randomStr = randomstring.generate(6);
@@ -175,9 +195,28 @@ function generateSentences(lesson, subs) {
 				sentence.sentenceNo = parseInt(sub.id, 10);
 				sentence.english = sub.text.split('\n')[0];
 				sentence.chinese = sub.text.split('\n')[1];
-				// audios: { type: Types.TextArray },
-				uploadFiles(lesson, sentence).then(function(url) {
-					sentence.audios = [url];
+				sentence.save(function(err, result) {
+					if (err) {
+						return callback(err);
+					}
+					callback(null, result);
+				});
+			};
+		}), function(err, results) {
+			if (err) {
+				return reject(err);
+			}
+			resolve(results);
+		});
+	});
+}
+
+function updateSentences(lesson, sentences, type) {
+	return new Promise(function(resolve, reject) {
+		async.series(sentences.map(function(sentence) {
+			return function(callback) {
+				uploadFiles(lesson, sentence, type).then(function(url) {
+					sentence[type] = url;
 					sentence.save(function(err, result) {
 						if (err) {
 							return callback(err);
@@ -257,39 +296,68 @@ exports = module.exports = () => {
 			}
 		})
 		.then(function(lesson) {
-			if (lesson.audio && lesson.subtitle) {
+			if ((lesson.hasAudio || lesson.hasVideo) && lesson.subtitle) {
 				return lesson;
 			}
-			throw new Error({detail: '课时未上传'});
+			throw new Error('课时未上传');
 		})
 		.then(function() {
 			return Sentence.model.remove({courseNo: theLesson.courseNo, lessonNo: theLesson.lessonNo}).exec();
 		})
 		.then(function() {
-			return sliceAudio(theLesson);
+			return parseSrt(theLesson);
 		})
-		.then(function(subs) {
-			theSubs = subs;
-			return speeds(theLesson, theSubs);
+		.then(function(srt) {
+			theSubs = srt;
+			if (theLesson.hasAudio) {
+				return slice(theLesson, theSubs, 'audio');
+			}
+			return;
+		})
+		.then(function() {
+			if (theLesson.hasVideo) {
+				return slice(theLesson, theSubs, 'video');
+			}
+			return;
+		})
+		.then(function() {
+			if (theLesson.hasAudio) {
+				return speeds(theLesson, theSubs, 'audio');
+			}
+			return;
+		})
+		.then(function() {
+			if (theLesson.hasVideo) {
+				return speeds(theLesson, theSubs, 'video');
+			}
+			return;
 		})
 		.then(function() {
 			return generateSentences(theLesson, theSubs);
 		})
 		.then(function(sentences) {
-			console.log(sentences);
+			if (theLesson.hasAudio) {
+				return updateSentences(theLesson, sentences, 'audio');
+			}
+		})
+		.then(function(sentences) {
+			if (theLesson.hasVideo) {
+				return updateSentences(theLesson, sentences, 'video');
+			}
 		})
 		.then(function() {
 			theMission.state = 'finished';
 			theMission.finishedTime = new Date;
+			theMission.reason = '';
 			console.log('mission completed: ', theMission);
 			return theMission.save();
 		})
 		.catch((err) => {
 			if (theMission) {
-				console.log('mission failed: ', theMission);
 				theMission.state = 'failed';
-				theMission.reason = JSON.stringify(err);
+				theMission.reason = err.toString();
 				theMission.save();
+				console.log('mission failed: ', theMission);
 			}
 			console.log(err);
 		})

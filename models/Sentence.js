@@ -14,8 +14,9 @@ Sentence.add({
 	sentenceNo: {type: Types.Number },
 	english: { type: String },
 	chinese: { type: String },
-	audios: { type: Types.TextArray },
+	audio: { type: String },
+	video: { type: String },
 });
 
-Sentence.defaultColumns = 'courseNo, lessonNo, sentenceNo, english, chinese, audios';
+Sentence.defaultColumns = 'courseNo, lessonNo, sentenceNo, english, chinese, audio';
 Sentence.register();

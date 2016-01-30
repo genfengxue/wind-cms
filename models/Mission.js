@@ -20,5 +20,5 @@ Mission.add({
 	reason: {type: String}
 });
 
-Mission.defaultColumns = 'courseNo, lessonNo, entryTime, state, finishedTime, completeness';
+Mission.defaultColumns = 'courseNo, lessonNo, entryTime, state, finishedTime, reason';
 Mission.register();

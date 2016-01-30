@@ -46,5 +46,13 @@ Lesson.add({
 	}
 });
 
+Lesson.schema.virtual('hasAudio').get(function() {
+	return this.audio && this.audio.filename;
+});
+
+Lesson.schema.virtual('hasVideo').get(function() {
+	return this.video && this.video.filename;
+});
+
 Lesson.defaultColumns = 'courseNo, lessonNo, englishTitle, chineseTitle, hasListen, hasTranslate, audio, video, subtitle';
 Lesson.register();
