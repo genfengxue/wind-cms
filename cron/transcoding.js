@@ -1,37 +1,21 @@
-var Router = require('express').Router;
-var router = new Router();
-var middleware = require('./middleware');
-var keystone = require('keystone');
-var Lesson = keystone.list('Lesson');
-var Promise = require('promise');
-var qiniu = require('qiniu');
-var parser = require('subtitles-parser');
-var fs = require('fs');
-var moment = require('moment');
-var ffmpeg = require('fluent-ffmpeg');
-var Sentence = keystone.list('Sentence');
-var randomstring = require('randomstring');
-var async = require('async');
+'use strict';
+const keystone = require('keystone');
+const Lesson = keystone.list('Lesson');
+const Sentence = keystone.list('Sentence');
+const Mission = keystone.list('Mission');
+const qiniu = require('qiniu');
+const parser = require('subtitles-parser');
+const fs = require('fs');
+const moment = require('moment');
+const ffmpeg = require('fluent-ffmpeg');
+const randomstring = require('randomstring');
+const async = require('async');
+const CronJob = require('cron').CronJob;
+
 
 qiniu.conf.ACCESS_KEY = '07cMjNhILyyOUOy4mes6SWwuwRnytDqrb6Zdlq0U';
 qiniu.conf.SECRET_KEY = 'NvlDby_4PcpNdWRfyzb5pli2y9mjquzC6Rv2GDnx';
-var qiniuHost = 'http://7xqe0p.com1.z0.glb.clouddn.com';
-
-var runningTask;
-
-router.get('/', middleware.requireUser, function(req, res, next) {
-	var view = new keystone.View(req, res);
-	var locals = res.locals;
-	
-	// Set locals
-	locals.section = 'lesson';
-	locals.formData = req.body || {};
-	locals.validationErrors = {};
-	locals.lessonSubmitted = false;
-	locals.runningTask = runningTask;
-
-	view.render('lesson');
-});
+const qiniuHost = 'http://7xqe0p.com1.z0.glb.clouddn.com';
 
 // 获取文件名字 /data/files/{课程号}_{课时号}_{句子号} /data/files/1_1_1
 function getNormalName(lesson, sub) {
@@ -45,7 +29,6 @@ function sliceAudio(lesson) {
 	fs.writeFileSync(srtPath, data, 'utf8');
 	data = fs.readFileSync(srtPath, 'utf8');
 	var srt = parser.fromSrt(data);
-	console.log(data);
 	var audioPath = lesson.audio.path + '/' + lesson.audio.filename;
 	var promise = new Promise(function(resolve, reject) {
 		async.series(srt.map(function(sub) {
@@ -211,63 +194,100 @@ function generateSentences(lesson, subs) {
 	});
 }
 
-router.post('/', middleware.requireUser, function(req, res, next) {
-	if (runningTask) {
-		return res.redirect('/lesson');
-	}
-	var view = new keystone.View(req, res);
-	var locals = res.locals;
-	var theLesson;
-	var theSubs;
-	// Set locals
-	locals.section = 'lesson';
-	locals.formData = req.body || {};
-	locals.validationErrors = {};
-	locals.lessonSubmitted = false;
-
-	new Promise(function(resolve) {
-		resolve();
-	}).then(function() {
-		return Lesson.model.findOne({courseNo: req.body.courseNo, lessonNo: req.body.lessonNo}).exec();
-	}).then(function(lesson) {
-		if (lesson) {
-			return lesson;
-		} else {
-			req.flash('error', {detail: '课时不存在'});
-			throw new Error({detail: '课时不存在'});
-		}
-	}).then(function(lesson) {
-		if (lesson.audio && lesson.subtitle) {
-			theLesson = lesson;
-			locals.lessonSubmitted = true;
-			return lesson;
-		}
-		req.flash('error', {detail: '课时未上传'});
-		throw new Error({detail: '课时未上传'});
-	})
-	.then(function() {
-		runningTask = {courseNo: theLesson.courseNo, lessonNo: theLesson.lessonNo};
-		view.render('lesson');
-		return Sentence.model.remove({courseNo: theLesson.courseNo, lessonNo: theLesson.lessonNo}).exec();
-	})
-	.then(function() {
-		return sliceAudio(theLesson);
-	})
-	.then(function(subs) {
-		theSubs = subs;
-		return speeds(theLesson, theSubs);
-	})
-	.then(function() {
-		return generateSentences(theLesson, theSubs);
-	})
-	.then(function(sentences) {
-		console.log(sentences);
-		runningTask = null;
-	})
-	.catch(function(err) {
-		console.log(err);
-		runningTask = null;
-	});
-});
-
-exports = module.exports = router;
+exports = module.exports = () => {
+	/**
+	 * //////////////run every 30 second/////////////////
+	 */
+	const threadId = randomstring.generate(4);
+	const job = new CronJob('*/30 * * * * *', () => {
+		let theMission;
+		let theLesson;
+		let theSubs;
+		console.log('*/30 * * * * * scanning remaining tasks');
+		new Promise((resolve, reject) => {
+			resolve();
+		})
+		.then(() => {
+			return Mission.model.find({state: 'processing', threadId: threadId}).exec();
+		})
+		.then((missions) => {
+			if (missions && missions.length) {
+				// is running
+				throw new Error('thread busy');
+			}
+			return Mission.model.findOne({state: 'pending'}).exec();
+		})
+		.then((mission) => {
+			if (!mission) {
+				throw new Error('no pending missions');
+			}
+			mission.threadId = threadId;
+			mission.state = 'processing';
+			mission.entryTime = new Date();
+			return new Promise((resolve, reject) => {
+				mission.save((err, result) => {
+					if (err) {
+						return reject(err);
+					}
+					resolve(mission);
+				});
+			});
+		})
+		.then((mission) => {
+			if (mission.threadId.toString() !== threadId) {
+				throw new Error('mission is being processed by other threads');
+			}
+			theMission = mission;
+			console.log('start mission: ', mission);
+			const courseNo = mission.courseNo;
+			const lessonNo = mission.lessonNo;
+			return Lesson.model.findOne({courseNo: courseNo, lessonNo: lessonNo}).exec();
+		})
+		.then(function(lesson) {
+			if (lesson) {
+				theLesson = lesson;
+				return lesson;
+			} else {
+				throw new Error('课时不存在');
+			}
+		})
+		.then(function(lesson) {
+			if (lesson.audio && lesson.subtitle) {
+				return lesson;
+			}
+			throw new Error({detail: '课时未上传'});
+		})
+		.then(function() {
+			return Sentence.model.remove({courseNo: theLesson.courseNo, lessonNo: theLesson.lessonNo}).exec();
+		})
+		.then(function() {
+			return sliceAudio(theLesson);
+		})
+		.then(function(subs) {
+			theSubs = subs;
+			return speeds(theLesson, theSubs);
+		})
+		.then(function() {
+			return generateSentences(theLesson, theSubs);
+		})
+		.then(function(sentences) {
+			console.log(sentences);
+		})
+		.then(function() {
+			theMission.state = 'finished';
+			theMission.finishedTime = new Date;
+			console.log('mission completed: ', theMission);
+			return theMission.save();
+		})
+		.catch((err) => {
+			if (theMission) {
+				console.log('mission failed: ', theMission);
+				theMission.state = 'failed';
+				theMission.reason = JSON.stringify(err);
+				theMission.save();
+			}
+			console.log(err);
+		})
+	}, null, true);
+	return job;
+};

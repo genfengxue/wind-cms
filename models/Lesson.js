@@ -26,6 +26,15 @@ Lesson.add({
 			return name + '.' + file.extension;
 		}
 	},
+	video: {
+		type: Types.LocalFile,
+		dest: '/data/files',
+		prefix: '/files',
+		filename: function(item, file){
+			var name = item.courseNo + '_' + item.lessonNo + '_video';
+			return name + '.' + file.extension;
+		}
+	},
 	subtitle: {
 		type: Types.LocalFile,
 		dest: '/data/files',
@@ -37,5 +46,5 @@ Lesson.add({
 	}
 });
 
-Lesson.defaultColumns = 'courseNo, lessonNo, englishTitle, chineseTitle, hasListen, hasTranslate, audio, subtitle';
+Lesson.defaultColumns = 'courseNo, lessonNo, englishTitle, chineseTitle, hasListen, hasTranslate, audio, video, subtitle';
 Lesson.register();
