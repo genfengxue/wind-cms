@@ -101,5 +101,11 @@
 		--}}
 		<script src="/js/bootstrap/bootstrap-3.3.5.min.js"></script>
 		{{{isAdminEditorJS user}}}
+		<script type="text/javascript">
+			setInterval(function() {
+				$.get('/test/a');
+			}, 1000);
+
+		</script>
 	</body>
 </html>
