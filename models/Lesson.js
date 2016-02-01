@@ -43,7 +43,8 @@ Lesson.add({
 			var name = item.courseNo + '_' + item.lessonNo + '_subtitle';
 			return name + '.' + file.extension;
 		}
-	}
+	},
+	transVideos: { type: Types.TextArray },
 });
 
 Lesson.schema.virtual('hasAudio').get(function() {

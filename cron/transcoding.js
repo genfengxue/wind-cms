@@ -72,7 +72,7 @@ function slice(lesson, srt, type) {
 }
 
 // var rates = ['0.8', '1.1', '1.2', '1.4', '2.0']; // prod
-var rates = ['0.8', '1.4', '2.0']; // test
+var rates = ['0.8', '1.0', '1.4', '2.0']; // test
 
 // 生成变速文件，变速文件命名规则是 "正常文件名"+"@"+"1_1"+"后缀"，如 /data/files/1_1_1@1_1.mp3
 function speed(lesson, subs, rate, type) {
@@ -143,6 +143,33 @@ function speeds(lesson, subs, type) {
 	});
 }
 
+function speedsVideo(lesson) {
+	return new Promise(function(resolve, reject) {
+		const videoPath = lesson.video.path + '/' + lesson.video.filename;
+		async.series(rates.map(function(rate) {
+			return (callback) => {
+				var outputFilePath = lesson.video.path + '/' + lesson.courseNo + '_' + lesson.lessonNo + '@' + rate.replace('.', '_') + '.mp4';
+				ffmpeg(videoPath)
+				.output(outputFilePath).complexFilter(['setpts='+ (1 / rate).toFixed(4) +'*PTS', 'atempo=' + rate])
+				.on('error', function(err) {
+					console.log(outputFilePath + ' An error occurred: ' + err.message);
+					callback(null, outputFilePath);
+				})
+				.on('end', function() {
+					console.log(outputFilePath + ' Processing finished !');
+					callback(null, outputFilePath);
+				})
+				.run();
+			}
+		}), function(err, results) {
+			if (err) {
+				return reject(err);
+			}
+			resolve(results);
+		});
+	});
+}
+
 // store as aRSX23/data/files/1_1_1@1_1.mp3
 function uploadFiles(lesson, sentence, type) {
 	const suffix = type == 'video' ? '.mp4' : '.mp3';
@@ -166,6 +193,8 @@ function uploadFiles(lesson, sentence, type) {
 						filePath,
 						extra,
 						function(err, ret) {
+							//{ hash: 'FhfWba548IMqCZb1hi0E2OXTJ5-2',
+							// key: 'wkfRxA/data/files/1_28@2_0.mp4' }
 							if (err) {
 								console.log('upload error: ', err);
 								return callback(err);
@@ -222,7 +251,7 @@ function updateSentences(lesson, sentences, type) {
 							return callback(err);
 						}
 						callback(null, result);
-					})
+					});
 				}, function(err) {
 					if (err) {
 						return callback(err);
@@ -234,6 +263,53 @@ function updateSentences(lesson, sentences, type) {
 				return reject(err);
 			}
 			resolve(results);
+		});
+	});
+}
+
+function uploadVideos(lesson) {
+	return new Promise(function(resolve, reject) {
+		var normalName = lesson.audio.path + '/' + lesson.courseNo + '_' + lesson.lessonNo; 
+		var suffix = '.mp4';
+		var filePaths = rates.map(function(rate) {
+			return normalName + '@' + rate.replace('.', '_') + suffix;
+		});
+		var randomStr = randomstring.generate(6);
+		async.series(filePaths.map(function(filePath) {
+			return function(callback) {
+				setTimeout(function() {
+					var putPolicy = new qiniu.rs.PutPolicy('scott');
+					var uptoken = putPolicy.token();
+					var extra = new qiniu.io.PutExtra();
+					var qiniuPath = randomStr + filePath;
+					qiniu.io.putFile(uptoken,
+						qiniuPath,
+						filePath,
+						extra,
+						function(err, ret) {
+							if (err) {
+								console.log('upload error: ', err);
+								return callback(err);
+							}
+							console.log('uploaded: ', ret);
+							callback(null, ret);
+						}
+					);
+				}, 100);
+			};
+		}), function(err, results) {
+			if (err) {
+				return reject(err);
+			}
+			lesson.transVideos = filePaths.map((x) => {
+				return qiniuHost + '/' + randomStr + x;
+			});
+			lesson.save(function(err, result) {
+				if (err) {
+					return reject(err);
+				}
+				resolve(result);
+			})
 		});
 	});
 }
@@ -314,12 +390,12 @@ exports = module.exports = () => {
 			}
 			return;
 		})
-		.then(function() {
-			if (theLesson.hasVideo) {
-				return slice(theLesson, theSubs, 'video');
-			}
-			return;
-		})
+		// .then(function() {
+		// 	if (theLesson.hasVideo) {
+		// 		return slice(theLesson, theSubs, 'video');
+		// 	}
+		// 	return;
+		// })
 		.then(function() {
 			if (theLesson.hasAudio) {
 				return speeds(theLesson, theSubs, 'audio');
@@ -328,7 +404,7 @@ exports = module.exports = () => {
 		})
 		.then(function() {
 			if (theLesson.hasVideo) {
-				return speeds(theLesson, theSubs, 'video');
+				return speedsVideo(theLesson);
 			}
 			return;
 		})
@@ -340,9 +416,14 @@ exports = module.exports = () => {
 				return updateSentences(theLesson, sentences, 'audio');
 			}
 		})
+		// .then(function(sentences) {
+		// 	if (theLesson.hasVideo) {
+		// 		return updateSentences(theLesson, sentences, 'video');
+		// 	}
+		// })
 		.then(function(sentences) {
 			if (theLesson.hasVideo) {
-				return updateSentences(theLesson, sentences, 'video');
+				return uploadVideos(theLesson);
 			}
 		})
 		.then(function() {
