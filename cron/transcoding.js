@@ -71,8 +71,8 @@ function slice(lesson, srt, type) {
 	return promise;
 }
 
-// var rates = ['0.8', '1.1', '1.2', '1.4', '2.0']; // prod
-var rates = ['0.8', '1.0', '1.4', '2.0']; // test
+var rates = ['0.8', '1.0', '1.1', '1.2', '1.4', '2.0']; // prod
+// var rates = ['0.8', '1.0', '1.4', '2.0']; // test
 
 // 生成变速文件，变速文件命名规则是 "正常文件名"+"@"+"1_1"+"后缀"，如 /data/files/1_1_1@1_1.mp3
 function speed(lesson, subs, rate, type) {
