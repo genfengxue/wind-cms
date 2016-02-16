@@ -11,7 +11,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const randomstring = require('randomstring');
 const async = require('async');
 const CronJob = require('cron').CronJob;
-
+const _ = require('lodash');
 
 qiniu.conf.ACCESS_KEY = '07cMjNhILyyOUOy4mes6SWwuwRnytDqrb6Zdlq0U';
 qiniu.conf.SECRET_KEY = 'NvlDby_4PcpNdWRfyzb5pli2y9mjquzC6Rv2GDnx';
@@ -176,9 +176,12 @@ function uploadFiles(lesson, sentence, type) {
 	return new Promise(function(resolve, reject) {
 		var normalName = getNormalName(lesson, {id: sentence.sentenceNo}, type); 
 		var localPath = normalName + suffix;
-		var filePaths = rates.map(function(rate) {
-			return normalName + '@' + rate.replace('.', '_') + suffix;
-		});
+		var suffixes = ['.mp3', '.ogg', '.wav'];
+		var filePaths = _.flatten(suffixes.map((suffix) => {
+			return rates.map(function(rate) {
+				return normalName + '@' + rate.replace('.', '_') + suffix;
+			});
+		}));
 		filePaths.push(localPath);
 		var randomStr = randomstring.generate(6);
 		async.series(filePaths.map(function(filePath) {
@@ -314,6 +317,57 @@ function uploadVideos(lesson) {
 	});
 }
 
+function converts(lesson, subs, type) {
+	var suffixes;
+	var suffix;
+	var filePaths = [];
+	if (type === 'audio') {
+		suffixes = ['.ogg', '.wav'];
+		suffix = '.mp3';
+		filePaths = _.flatten(subs.map((sub) => {
+			var normalName = getNormalName(lesson, {id: sub.id}, type); 
+			var localPath = normalName + suffix;
+			return rates.map(function(rate) {
+				return normalName + '@' + rate.replace('.', '_') + suffix;
+			});
+		}));
+	} else {
+		suffixes = ['.webm', '.ogg'];
+	}
+	return new Promise(function(resolve, reject) {
+		async.series(filePaths.map(function(filePath) {
+			return function(callback) {
+				var commands = suffixes.map((outPutSuffix) => {
+					return ffmpeg(filePath).format(outPutSuffix.substr(1, outPutSuffix.length - 1)).save(filePath.substr(0, filePath.length - suffix.length) + outPutSuffix);
+				});
+				async.series(commands.map(function(command) {
+					return function(formatCallback) {
+						command.on('error', function(err) {
+							console.log(filePath + ' An error occurred Converting : ' + err.message);
+							formatCallback(null);
+						})
+						.on('end', function() {
+							console.log(filePath + ' Converting finished !');
+							formatCallback(null);
+						})
+						.run();
+					}
+				}, function(formatErr, formatResults) {
+					if (formatErr) {
+						return callback(error);
+					}
+					callback(null)
+				});
+			};
+		}), function(err, results) {
+			if (err) {
+				return reject(err);
+			}
+			resolve(results);
+		});
+	});
+}
+
 exports = module.exports = () => {
 	/**
 	 * //////////////run every 30 second/////////////////
@@ -399,6 +453,12 @@ exports = module.exports = () => {
 		.then(function() {
 			if (theLesson.hasAudio) {
 				return speeds(theLesson, theSubs, 'audio');
+			}
+			return;
+		})
+		.then(function() {
+			if (theLesson.hasAudio) {
+				return converts(theLesson, theSubs, 'audio');
 			}
 			return;
 		})
