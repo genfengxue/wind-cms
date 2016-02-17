@@ -186,27 +186,38 @@ function uploadFiles(lesson, sentence, type) {
 		var randomStr = randomstring.generate(6);
 		async.series(filePaths.map(function(filePath) {
 			return function(callback) {
-				setTimeout(function() {
-					var putPolicy = new qiniu.rs.PutPolicy('scott');
-					var uptoken = putPolicy.token();
-					var extra = new qiniu.io.PutExtra();
-					var qiniuPath = randomStr + filePath;
-					qiniu.io.putFile(uptoken,
-						qiniuPath,
-						filePath,
-						extra,
-						function(err, ret) {
-							//{ hash: 'FhfWba548IMqCZb1hi0E2OXTJ5-2',
-							// key: 'wkfRxA/data/files/1_28@2_0.mp4' }
-							if (err) {
-								console.log('upload error: ', err);
-								return callback(err);
+				var retryTimes = 3;
+				var uploadFun = function() {
+					setTimeout(function() {
+						var putPolicy = new qiniu.rs.PutPolicy('scott');
+						var uptoken = putPolicy.token();
+						var extra = new qiniu.io.PutExtra();
+						var qiniuPath = randomStr + filePath;
+						qiniu.io.putFile(uptoken,
+							qiniuPath,
+							filePath,
+							extra,
+							function(err, ret) {
+								retryTimes--;
+								//{ hash: 'FhfWba548IMqCZb1hi0E2OXTJ5-2',
+								// key: 'wkfRxA/data/files/1_28@2_0.mp4' }
+								if (err) {
+									console.log('upload error: ', err);
+									if (retryTimes) {
+										console.log('retry uploading');
+										return uploadFun();
+									}
+									return callback(err);
+								}
+								console.log('uploaded: ', ret);
+								fs.unlinkSync(filePath);
+								callback(null, ret);
+								// remove filePath
 							}
-							console.log('uploaded: ', ret);
-							callback(null, ret);
-						}
-					);
-				}, 100);
+						);
+					}, 100);
+				};
+				uploadFun();
 			};
 		}), function(err, results) {
 			if (err) {
@@ -295,6 +306,7 @@ function uploadVideos(lesson) {
 								return callback(err);
 							}
 							console.log('uploaded: ', ret);
+							fs.unlinkSync(filePath);
 							callback(null, ret);
 						}
 					);
@@ -336,27 +348,27 @@ function converts(lesson, subs, type) {
 	}
 	return new Promise(function(resolve, reject) {
 		async.series(filePaths.map(function(filePath) {
-			return function(callback) {
-				var commands = suffixes.map((outPutSuffix) => {
-					return ffmpeg(filePath).format(outPutSuffix.substr(1, outPutSuffix.length - 1)).save(filePath.substr(0, filePath.length - suffix.length) + outPutSuffix);
-				});
-				async.series(commands.map(function(command) {
-					return function(formatCallback) {
-						command.on('error', function(err) {
-							console.log(filePath + ' An error occurred Converting : ' + err.message);
+			return (callback) => {
+				async.series(suffixes.map(function(outPutSuffix) {
+					return (formatCallback) => {
+						var outputFilePath = filePath.substr(0, filePath.length - suffix.length) + outPutSuffix;
+						ffmpeg(filePath)
+						.format(outPutSuffix.substr(1, outPutSuffix.length - 1))
+						.on('error', function(err) {
+							console.log(outputFilePath + ' An error occurred Converting : ' + err.message);
 							formatCallback(null);
 						})
 						.on('end', function() {
-							console.log(filePath + ' Converting finished !');
+							console.log(outputFilePath + ' Converting finished !');
 							formatCallback(null);
 						})
-						.run();
-					}
-				}, function(formatErr, formatResults) {
+						.save(outputFilePath);
+					};
+				}), function(formatErr, formatResults) {
 					if (formatErr) {
-						return callback(error);
+						return callback(formatErr);
 					}
-					callback(null)
+					callback(null, formatResults);
 				});
 			};
 		}), function(err, results) {
@@ -432,6 +444,7 @@ exports = module.exports = () => {
 			throw new Error('课时未上传');
 		})
 		.then(function() {
+			// todo: remove qiniu files
 			return Sentence.model.remove({courseNo: theLesson.courseNo, lessonNo: theLesson.lessonNo}).exec();
 		})
 		.then(function() {
