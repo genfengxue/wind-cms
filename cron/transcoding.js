@@ -509,7 +509,11 @@ exports = module.exports = () => {
 		.catch((err) => {
 			if (theMission) {
 				theMission.state = 'failed';
-				theMission.reason = err.toString();
+				try {
+					theMission.reason = JSON.stringify(err);
+				} catch (e) {
+					theMission.reason = err.toString();
+				}
 				theMission.save();
 				console.log('mission failed: ', theMission);
 			}
