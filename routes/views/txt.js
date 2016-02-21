@@ -61,8 +61,8 @@ exports = module.exports = function(req, res) {
 		}
 		var length = Math.max(chArr.length, enArr.length);
 		for (var i = 0; i < length; i++) {
-			newArr.push(chArr[i]);
 			newArr.push(enArr[i]);
+			newArr.push(chArr[i]);
 			newArr.push('');
 		}
 		var newData = newArr.join('\n');
