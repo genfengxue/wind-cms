@@ -1,0 +1,33 @@
+<div class="container">
+	<h1>文本转化</h1>
+</div>
+<div class="container">
+	<div class="row">
+		<div class="col-sm-8 col-md-6">
+			{{#if txtSubmitted}}
+			<a href="{{link}}">Download</a> <br>
+			<a href="/txt/">返回<a>
+			{{else}}
+			<form method="post" enctype="multipart/form-data">
+				<input type="hidden" name="action" value="txt">
+				{{#if validationErrors.server}}
+					<p class="text-danger">
+						{{validationErrors.server}}
+					</p>
+				{{/if}}
+				<div class="form-group {{#if validationErrors.ch}}has-error{{/if}}">
+					<label>中文</label>
+					<input type="file" name="ch_upload" class="form-control" required>
+				</div>
+				<div class="form-group {{#if validationErrors.en}}has-error{{/if}}">
+					<label>英文</label>
+					<input type="file" name="en_upload" class="form-control" required>
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Send</button>
+				</div>
+			</form>
+			{{/if}}
+		</div>
+	</div>
+</div>
