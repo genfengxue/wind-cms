@@ -41,8 +41,8 @@ function slice(lesson, srt, type) {
 				const startTimeStr = sub.startTime.replace(',', '.');
 				const endTimeStr = sub.endTime.replace(',', '.');
 				// 在时间轴前后补足
-				const before = 600;
-				const after = 300;
+				const before = 0;
+				const after = 0;
 				let startTime = moment.duration(startTimeStr) - before;
 				startTime = startTime > 0 ? startTime : 0;
 				var duration = moment.duration(endTimeStr) - startTime + after;
