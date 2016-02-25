@@ -27,8 +27,6 @@ function parseSrt(lesson) {
 	var srtPath = lesson.subtitle.path + '/' + lesson.subtitle.filename;
 
 	var data = stripBom(fs.readFileSync(srtPath, 'utf8'));
-	fs.writeFileSync(srtPath, data, 'utf8');
-	data = fs.readFileSync(srtPath, 'utf8');
 	var srt = parser.fromSrt(data);
 	return srt;
 }
