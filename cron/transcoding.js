@@ -153,7 +153,7 @@ function speedsMutedVideo(lesson) {
 				.output(outputFilePath).complexFilter(['setpts='+ (1 / rate).toFixed(4) +'*PTS', 'atempo=' + rate])
 				.on('error', function(err) {
 					console.log(outputFilePath + ' An error occurred: ' + err.message);
-					callback(null, outputFilePath);
+					callback(err);
 				})
 				.on('end', function() {
 					console.log(outputFilePath + ' Processing finished !');
@@ -180,7 +180,7 @@ function speedsVideo(lesson) {
 				.output(outputFilePath).complexFilter(['setpts='+ (1 / rate).toFixed(4) +'*PTS', 'atempo=' + rate])
 				.on('error', function(err) {
 					console.log(outputFilePath + ' An error occurred: ' + err.message);
-					callback(null, outputFilePath);
+					callback(err);
 				})
 				.on('end', function() {
 					console.log(outputFilePath + ' Processing finished !');
