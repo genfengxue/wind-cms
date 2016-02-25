@@ -71,8 +71,8 @@ function slice(lesson, srt, type) {
 	return promise;
 }
 
-var rates = ['0.8', '1.0', '1.1', '1.2', '1.4', '2.0']; // prod
-// var rates = ['0.8', '1.0', '1.4', '2.0']; // test
+// var rates = ['0.8', '1.0', '1.1', '1.2', '1.4', '2.0']; // prod
+var rates = ['0.8', '1.0', '1.4', '2.0']; // test
 
 // 生成变速文件，变速文件命名规则是 "正常文件名"+"@"+"1_1"+"后缀"，如 /data/files/1_1_1@1_1.mp3
 function speed(lesson, subs, rate, type) {
@@ -134,6 +134,33 @@ function speeds(lesson, subs, type) {
 					callback(error);
 				});
 			};
+		}), function(err, results) {
+			if (err) {
+				return reject(err);
+			}
+			resolve(results);
+		});
+	});
+}
+
+function speedsMutedVideo(lesson) {
+	return new Promise(function(resolve, reject) {
+		const videoPath = lesson.videoMuted.path + '/' + lesson.videoMuted.filename;
+		async.series(rates.map(function(rate) {
+			return (callback) => {
+				var outputFilePath = lesson.videoMuted.path + '/' + lesson.courseNo + '_' + lesson.lessonNo + '_muted' + '@' + rate.replace('.', '_') + '.mp4';
+				ffmpeg(videoPath)
+				.output(outputFilePath).complexFilter(['setpts='+ (1 / rate).toFixed(4) +'*PTS', 'atempo=' + rate])
+				.on('error', function(err) {
+					console.log(outputFilePath + ' An error occurred: ' + err.message);
+					callback(null, outputFilePath);
+				})
+				.on('end', function() {
+					console.log(outputFilePath + ' Processing finished !');
+					callback(null, outputFilePath);
+				})
+				.run();
+			}
 		}), function(err, results) {
 			if (err) {
 				return reject(err);
@@ -283,10 +310,20 @@ function updateSentences(lesson, sentences, type) {
 
 function uploadVideos(lesson) {
 	return new Promise(function(resolve, reject) {
-		var normalName = lesson.audio.path + '/' + lesson.courseNo + '_' + lesson.lessonNo; 
-		var suffix = '.mp4';
-		var filePaths = rates.map(function(rate) {
-			return normalName + '@' + rate.replace('.', '_') + suffix;
+		var normalNames = [];
+		if (lesson.hasVideoMuted) {
+			normalNames.push(lesson.audio.path + '/' + lesson.courseNo + '_' + lesson.lessonNo + '_muted');
+		}
+		if (lesson.hasVideo) {
+			normalNames.push(lesson.audio.path + '/' + lesson.courseNo + '_' + lesson.lessonNo);
+		}
+		var suffixes = ['.mp4'];
+		var filePaths = normalNames.map((normalName) => {
+			return suffixes.map((suffix) => {
+				return rates.map(function(rate) {
+					return normalName + '@' + rate.replace('.', '_') + suffix;
+				});
+			});
 		});
 		var randomStr = randomstring.generate(6);
 		async.series(filePaths.map(function(filePath) {
@@ -344,7 +381,9 @@ function converts(lesson, subs, type) {
 			});
 		}));
 	} else {
-		suffixes = ['.webm', '.ogg'];
+		suffixes = [];
+		suffix = '.mp4';
+		filePaths = subs;
 	}
 	return new Promise(function(resolve, reject) {
 		async.series(filePaths.map(function(filePath) {
@@ -457,12 +496,6 @@ exports = module.exports = () => {
 			}
 			return;
 		})
-		// .then(function() {
-		// 	if (theLesson.hasVideo) {
-		// 		return slice(theLesson, theSubs, 'video');
-		// 	}
-		// 	return;
-		// })
 		.then(function() {
 			if (theLesson.hasAudio) {
 				return speeds(theLesson, theSubs, 'audio');
@@ -481,9 +514,21 @@ exports = module.exports = () => {
 			}
 			return;
 		})
-		// .then(function() {
+		// .then(function(videoPathes) {
 		// 	if (theLesson.hasVideo) {
-		// 		return converts(theLesson, theSubs, 'video');
+		// 		return converts(theLesson, videoPathes, 'video');
+		// 	}
+		// 	return;
+		// })
+		.then(function() {
+			if (theLesson.hasVideoMuted) {
+				return speedsMutedVideo(theLesson);
+			}
+			return;
+		})
+		// .then(function(videoPathes) {
+		// 	if (theLesson.hasVideo) {
+		// 		return converts(theLesson, videoPathes, 'video');
 		// 	}
 		// 	return;
 		// })
@@ -501,7 +546,7 @@ exports = module.exports = () => {
 		// 	}
 		// })
 		.then(function(sentences) {
-			if (theLesson.hasVideo) {
+			if (theLesson.hasVideo||theLesson.hasVideoMuted) {
 				return uploadVideos(theLesson);
 			}
 		})
