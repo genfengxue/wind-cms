@@ -12,6 +12,7 @@ const randomstring = require('randomstring');
 const async = require('async');
 const CronJob = require('cron').CronJob;
 const _ = require('lodash');
+var stripBom = require('strip-bom');
 
 qiniu.conf.ACCESS_KEY = '07cMjNhILyyOUOy4mes6SWwuwRnytDqrb6Zdlq0U';
 qiniu.conf.SECRET_KEY = 'NvlDby_4PcpNdWRfyzb5pli2y9mjquzC6Rv2GDnx';
@@ -24,7 +25,8 @@ function getNormalName(lesson, sub, type) {
 
 function parseSrt(lesson) {
 	var srtPath = lesson.subtitle.path + '/' + lesson.subtitle.filename;
-	var data = fs.readFileSync(srtPath, 'utf8');
+
+	var data = stripBom(fs.readFileSync(srtPath, 'utf8'));
 	fs.writeFileSync(srtPath, data, 'utf8');
 	data = fs.readFileSync(srtPath, 'utf8');
 	var srt = parser.fromSrt(data);
