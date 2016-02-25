@@ -481,6 +481,12 @@ exports = module.exports = () => {
 			}
 			return;
 		})
+		// .then(function() {
+		// 	if (theLesson.hasVideo) {
+		// 		return converts(theLesson, theSubs, 'video');
+		// 	}
+		// 	return;
+		// })
 		.then(function() {
 			return generateSentences(theLesson, theSubs);
 		})

@@ -35,6 +35,15 @@ Lesson.add({
 			return name + '.' + file.extension;
 		}
 	},
+	videoMuted: {
+		type: Types.LocalFile,
+		dest: '/data/files',
+		prefix: '/files',
+		filename: function(item, file){
+			var name = item.courseNo + '_' + item.lessonNo + '_videoMuted';
+			return name + '.' + file.extension;
+		}
+	},
 	subtitle: {
 		type: Types.LocalFile,
 		dest: '/data/files',
