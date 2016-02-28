@@ -54,6 +54,7 @@ Lesson.add({
 		}
 	},
 	transVideos: { type: Types.TextArray },
+	videoPath: { type: String },
 });
 
 Lesson.schema.virtual('hasAudio').get(function() {

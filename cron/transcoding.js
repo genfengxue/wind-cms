@@ -150,7 +150,7 @@ function speedsMutedVideo(lesson) {
 			return (callback) => {
 				var outputFilePath = lesson.videoMuted.path + '/' + lesson.courseNo + '_' + lesson.lessonNo + '_muted' + '@' + rate.replace('.', '_') + '.mp4';
 				ffmpeg(videoPath)
-				.output(outputFilePath).complexFilter(['setpts='+ (1 / rate).toFixed(4) +'*PTS', 'atempo=' + rate])
+				.output(outputFilePath).complexFilter(['setpts='+ (1 / rate).toFixed(4) +'*PTS'])
 				.on('error', function(err) {
 					console.log(outputFilePath + ' An error occurred: ' + err.message);
 					callback(err);
@@ -356,6 +356,7 @@ function uploadVideos(lesson) {
 			lesson.transVideos = filePaths.map((x) => {
 				return qiniuHost + '/' + randomStr + x;
 			});
+			lesson.videoPath = qiniuHost + '/' + randomStr + lesson.audio.path + '/' + lesson.courseNo + '_' + lesson.lessonNo;
 			lesson.save(function(err, result) {
 				if (err) {
 					return reject(err);
