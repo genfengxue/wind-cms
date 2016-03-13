@@ -203,7 +203,7 @@ function uploadFiles(lesson, sentence, type) {
 	return new Promise(function(resolve, reject) {
 		var normalName = getNormalName(lesson, {id: sentence.sentenceNo}, type); 
 		var localPath = normalName + suffix;
-		var suffixes = ['.mp3', '.webm'];
+		var suffixes = ['.mp3', '.ogg', '.wav'];
 		var filePaths = _.flatten(suffixes.map((suffix) => {
 			return rates.map(function(rate) {
 				return normalName + '@' + rate.replace('.', '_') + suffix;
@@ -317,7 +317,7 @@ function uploadVideos(lesson) {
 		if (lesson.hasVideo) {
 			normalNames.push(lesson.audio.path + '/' + lesson.courseNo + '_' + lesson.lessonNo);
 		}
-		var suffixes = ['.mp4', '.webm'];
+		var suffixes = ['.mp4'];
 		var filePaths = _.flattenDeep(normalNames.map((normalName) => {
 			return suffixes.map((suffix) => {
 				return rates.map(function(rate) {
@@ -372,7 +372,7 @@ function converts(lesson, subs, type) {
 	var suffix;
 	var filePaths = [];
 	if (type === 'audio') {
-		suffixes = ['webm'];
+		suffixes = ['.ogg', '.wav'];
 		suffix = '.mp3';
 		filePaths = _.flatten(subs.map((sub) => {
 			var normalName = getNormalName(lesson, {id: sub.id}, type); 
@@ -382,7 +382,7 @@ function converts(lesson, subs, type) {
 			});
 		}));
 	} else {
-		suffixes = ['webm'];
+		suffixes = [];
 		suffix = '.mp4';
 		filePaths = subs;
 	}
