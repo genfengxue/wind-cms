@@ -12,6 +12,9 @@ exports = module.exports = function(done) {
 			if (homework.serverId) {
 				homework.serverIds = [homework.serverId];
 				homework.save(function(err, result) {
+					if (err) {
+						console.log(err);
+					}
 					callback(err);
 				});
 			}
