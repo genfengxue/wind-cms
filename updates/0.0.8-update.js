@@ -7,7 +7,8 @@ exports = module.exports = function(done) {
 		if (err) {
 			return done(err);
 		}
-		async.each(results, function(homework, callback) {
+		async.eachSeries(results, function(homework, callback) {
+			console.log(homework._id);
 			if (homework.serverId) {
 				homework.serverIds = [homework.serverId];
 				homework.save(function(err, result) {
