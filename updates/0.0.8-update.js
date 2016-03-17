@@ -7,18 +7,20 @@ exports = module.exports = function(done) {
 		if (err) {
 			return done(err);
 		}
-		async.eachSeries(results, function(homework, callback) {
-			console.log(homework._id);
-			if (homework.serverId) {
-				homework.serverIds = [homework.serverId];
-				homework.save(function(err, result) {
-					if (err) {
-						console.log(err);
-					}
-					callback(err);
-				});
-			}
-		}, function(err) {
+		async.series(results.map(function(homework) {
+			return function(callback) {
+				console.log(homework._id);
+				if (homework.serverId) {
+					homework.serverIds = [homework.serverId];
+					homework.save(function(err, result) {
+						if (err) {
+							console.log(err);
+						}
+						callback(null, result);
+					});
+				}
+			};
+		}), function(err, results) {
 			console.log(err);
 			done(err);
 		});
