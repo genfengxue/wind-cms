@@ -18,6 +18,8 @@ exports = module.exports = function(done) {
 						}
 						callback(null, result);
 					});
+				} else {
+					callback(null, homework);
 				}
 			};
 		}), function(err, results) {
