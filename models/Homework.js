@@ -7,7 +7,7 @@ var Types = keystone.Field.Types;
  */
 
 var Homework = new keystone.List('Homework', {
-	noedit: true
+	nocreate: true,
 });
 
 Homework.add({
