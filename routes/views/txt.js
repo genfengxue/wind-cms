@@ -66,7 +66,6 @@ exports = module.exports = function(req, res) {
 			newArr.push('');
 		}
 		var newData = newArr.join('\n');
-		console.log(newData);
 		fs.writeFileSync(enPath, newData, 'utf8');
 		var randomStr = randomstring.generate(12);
 		var putPolicy = new qiniu.rs.PutPolicy('scott');
