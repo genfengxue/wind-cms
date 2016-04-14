@@ -6,7 +6,12 @@ var Types = keystone.Field.Types;
  * ==========
  */
 
-var Sentence = new keystone.List('Sentence');
+var Sentence = new keystone.List('Sentence', {
+	nocreate: true,
+	map: {
+		name: 'english',
+	}
+});
 
 Sentence.add({
 	courseNo: { type: Types.Number },

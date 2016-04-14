@@ -16,7 +16,8 @@ var stripBom = require('strip-bom');
 
 qiniu.conf.ACCESS_KEY = '07cMjNhILyyOUOy4mes6SWwuwRnytDqrb6Zdlq0U';
 qiniu.conf.SECRET_KEY = 'NvlDby_4PcpNdWRfyzb5pli2y9mjquzC6Rv2GDnx';
-const qiniuHost = 'http://7xqe0p.com1.z0.glb.clouddn.com';
+// const qiniuHost = 'http://7xqe0p.com1.z0.glb.clouddn.com';
+const qiniuHost = 'https://o3f47rda5.qnssl.com';
 
 // 获取文件名字 /data/files/{课程号}_{课时号}_{句子号} /data/files/1_1_1
 function getNormalName(lesson, sub, type) {
@@ -479,6 +480,8 @@ exports = module.exports = () => {
 		})
 		.then(function(lesson) {
 			if ((lesson.hasAudio || lesson.hasVideo) && lesson.subtitle) {
+				lesson.videoPath = '';
+				lesson.save(function() {});
 				return lesson;
 			}
 			throw new Error('课时未上传');
