@@ -511,7 +511,7 @@ exports = module.exports = () => {
 		})
 		.then(function() {
 			if (theLesson.hasVideo) {
-				return speedsVideo(theLesson);
+				return speedsVideo(theLesson);//和speeds有什么不一样
 			}
 			return;
 		})
@@ -523,7 +523,7 @@ exports = module.exports = () => {
 		// })
 		.then(function() {
 			if (theLesson.hasVideoMuted) {
-				return speedsMutedVideo(theLesson);
+				return speedsMutedVideo(theLesson);//这个方法是干嘛的
 			}
 			return;
 		})

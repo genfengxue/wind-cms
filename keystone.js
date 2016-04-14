@@ -67,7 +67,7 @@ keystone.set('nav', {
 
 keystone.start();
 
-var transcoding = require('./cron/transcoding')();
+//var transcoding = require('./cron/transcoding')();
 
 
 
