@@ -60,7 +60,8 @@ keystone.set('routes', require('./routes'));
 keystone.set('nav', {
 	'courses': 'courses',
 	'lessons': ['lessons', 'sentences'],
-	'missions': 'missions'
+	'missions': 'missions',
+	'发音': ['pronunciation-courses', 'pronunciation-lessons', 'lesson-activities']
 });
 
 // Start Keystone to connect to your database and initialise the web server

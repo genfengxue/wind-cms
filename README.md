@@ -37,3 +37,19 @@ cd node_modules/keystone/
 #删除package.json中mongoose那一行，然后重新安装最新的版本，最新版貌似避免了对C++ bson的依赖
 npm i --save --save-exact mongoose --verbose
 ```
+
+### qiniuHelpder
+这个是给model层用的，model字段可以watch一个文件字段，然后给value传这个qiniuHelper生成的方法。即可实现文件自动上传七牛，然后将该字段转化为七牛地址  
+示例：
+```
+audioUpload: { // 用于CMS中上传文件接口
+	type: Types.LocalFile,
+	dest: '/data/files',
+	prefix: '/files'
+},
+audio: { // 系统处理后的字段，可以从CMS中隐藏
+	type: String, note: '音频地址，请勿修改', 
+	watch: 'audioUpload',
+	value: qiniuHelper('audioUpload'),
+}, // 讲解/朗读/打boss的音频
+```
