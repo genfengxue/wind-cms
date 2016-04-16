@@ -17,6 +17,7 @@ Lesson.add({
 	chineseTitle: { type: String, required: true, initial: true},
 	hasListen: { type: Boolean, default: false},
 	hasTranslate: { type: Boolean, default: false},
+	publishedDate: {type: Date, default: new Date(), note: '自动发布时间，默认是创建时间'}, // auto publish date
 	audio: {
 		type: Types.LocalFile,
 		dest: '/data/files',
