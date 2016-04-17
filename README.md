@@ -14,6 +14,9 @@ npm install
 COOKIE_SECRET=c0272b28ce1b4de1d48898cf8eccd2dcca24c4adb5657edcabedfd6d32df667ec4cfe4b67447976a75cb0c45c0ce7f31ecf40a44226b9f6e3645188f545d8d4d
 CLOUDINARY_URL=cloudinary://333779167276662:_8jbSi9FB3sWYrfimcl8VKh34rI@keystone-demo
 ```
+```
+MONGO_URI=mongodb://localhost:27018/wind-cms-dev
+```
 ### 运行
 npm start
 
