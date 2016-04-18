@@ -19,7 +19,7 @@ Lesson.add({
 	hasTranslate: { type: Boolean, default: false},
 	publishedDate: {type: Date, default: new Date(), note: '自动发布时间，默认是创建时间'}, // auto publish date
 	homeworkLink: {type: String, label: '听力问题链接'},
-	homeworkTxt: {type: Types.Html, wysiwyg: true, height: 300, note: '富文本', label: '翻译问题' },
+	homeworkTxt: {type: Types.Textarea, height: 300, label: '翻译问题' },
 	homeworkAnswer: {type: Types.Html, wysiwyg: true, height: 300, note: '富文本', label: '翻译答案' },
 	audio: {
 		type: Types.LocalFile,
