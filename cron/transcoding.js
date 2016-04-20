@@ -18,6 +18,7 @@ qiniu.conf.ACCESS_KEY = '07cMjNhILyyOUOy4mes6SWwuwRnytDqrb6Zdlq0U';
 qiniu.conf.SECRET_KEY = 'NvlDby_4PcpNdWRfyzb5pli2y9mjquzC6Rv2GDnx';
 // const qiniuHost = 'http://7xqe0p.com1.z0.glb.clouddn.com';
 const qiniuHost = 'https://o3f47rda5.qnssl.com';
+// bucket = 'scott';
 
 // 获取文件名字 /data/files/{课程号}_{课时号}_{句子号} /data/files/1_1_1
 function getNormalName(lesson, sub, type) {
@@ -39,7 +40,7 @@ function slice(lesson, srt, type) {
 	var promise = new Promise(function(resolve, reject) {
 		async.series(srt.map(function(sub) {
 			return function(callback) {
-				const startTimeStr = sub.startTime.replace(',', '.');
+				const startTimeStr = sub.startTime.replace(',', '.');//转换成毫秒格式
 				const endTimeStr = sub.endTime.replace(',', '.');
 				// 在时间轴前后补足
 				const before = 0;
