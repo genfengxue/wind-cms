@@ -23,8 +23,9 @@ Behavior.add({
 	action: { type: String },
 	value: { type: String },
 	created: {type: Date},
+	referer: { type: String },
 });
 
 Behavior.defaultSort = '-created';
-Behavior.defaultColumns = 'ip, scope, action, browser.name, engine.name, os.name, created';
+Behavior.defaultColumns = 'ip, scope, action, referer, browser.name, os.name, created';
 Behavior.register();
