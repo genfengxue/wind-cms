@@ -57,6 +57,8 @@ Lesson.add({
 	videoPath: { type: String },
 });
 
+Lesson.schema.index({courseNo: 1, lessonNo: 1}, {unique: true});
+
 Lesson.schema.virtual('hasAudio').get(function() {
 	return this.audio && this.audio.filename;
 });
