@@ -1,4 +1,4 @@
 #!/bin/bash
 git pull
 pm2 restart cms
-tailf ~/.pm2/logs/cms-out-2.log
+tailf ~/.pm2/logs/cms-out-*.log
