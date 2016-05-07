@@ -40,6 +40,9 @@ exports = module.exports = function(app) {
 	app.get('/blog/post/:post', routes.views.post);
 	app.all('/contact', routes.views.contact);
 	app.all('/txt', middleware.requireUser, routes.views.txt);
+	app.all('/pronunciation-lessons', middleware.requireUser, routes.views.pronunciationLessons);
+	app.all('/pronunciation-lessons/:id', middleware.requireUser, routes.views.pronunciationLesson);
+	app.all('/lesson-activities/:id', middleware.requireUser, routes.views.lessonActivity);
 	app.all('/txt2', routes.views.txt2);
 	// NOTE: To protect a route so that only admins can see it, use the requireUser middleware:
 	// app.get('/protected', middleware.requireUser, routes.views.protected);

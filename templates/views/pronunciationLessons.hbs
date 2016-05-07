@@ -1,0 +1,42 @@
+<div class="container">
+	<h3>
+		发音课时列表
+		<br>
+		<small>
+			点击课程编号进行筛选，点击<span class="text-primary">编辑课程</span>进入后台课程列表页，
+			<br>
+			点击课时链接进入课时对应的activity列表，点击<span class="text-primary">编辑课时</span>，进入课时本身的后台编辑页
+		</small>
+	</h3>
+</div>
+<div class="container">
+	<div class="row">
+		<div class="col-sm-12">
+			<h5>Courses <a class="pull-right" href="/keystone/pronunciation-courses" target="_blank">编辑课程</a></h5>
+			{{#if filters.courseNo}}
+			{{else}}
+			<p>请选择课时</p>
+			{{/if}}
+			<p>
+				{{# each data.pronunciationCourses }}
+				<a href="?courseNo={{courseNo}}" {{#ifeq ../filters.courseNo courseNo}}class="btn btn-primary"{{else}}class="btn btn-default"{{/ifeq}}>{{courseNo}}</a>
+				{{/each}}
+			</p>
+			<hr>
+		</div>
+		<div class="col-sm-12">
+			<h5 class="text-weight-normal">Showing {{ data.pronunciationLessons.length}} lessons.</h5>
+			<div class="blog">
+				{{# each data.pronunciationLessons}}
+				<div class="post">
+					<hr>
+					<h4>
+						<a href="/pronunciation-lessons/{{{_id}}}">{{{chineseTitle}}} <span class="text-muted">courseNo: {{{courseNo}}}, lessonNo: {{{lessonNo}}}</span></a>
+						<a href="/keystone/pronunciation-lessons/{{_id}}" class="pull-right">编辑课时</a>
+					</h4>
+				</div>
+				{{/each}}
+			</div>
+		</div>
+	</div>
+</div>

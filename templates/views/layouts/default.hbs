@@ -18,7 +18,14 @@
 			<script src="//cdn.jsdelivr.net/html5shiv/3.7.3/html5shiv.js"></script>
 			<script src="//cdn.jsdelivr.net/respond/1.4.2/respond.min.js"></script>
 		<![endif]-->
-
+		{{!--
+			//- jQuery 1.11.3 is included by default, and required by both Bootstrap
+			//- and the KeystoneJS Content Editor. If you are not targeting IE8,
+			//- you can upgrade to 2.1.4 (also bundled) for better performance.
+		--}}
+		<link rel="stylesheet" href="/libs/medium-editor/dist/css/medium-editor.min.css" type="text/css" media="screen" charset="utf-8">
+		<link rel="stylesheet" href="/libs/medium-editor/dist/css/themes/default.css">
+		<script src="/js/jquery/jquery-1.11.3.min.js"></script>
 	</head>
 	<body>
 		<div id="header">
@@ -89,12 +96,6 @@
 				<p>Powered by <a href="http://keystonejs.com" target="_blank">KeystoneJS</a>.</p>
 			</div>
 		</div>
-		{{!--
-			//- jQuery 1.11.3 is included by default, and required by both Bootstrap
-			//- and the KeystoneJS Content Editor. If you are not targeting IE8,
-			//- you can upgrade to 2.1.4 (also bundled) for better performance.
-		--}}
-		<script src="/js/jquery/jquery-1.11.3.min.js"></script>
 		{{!--
 			//- Customise which Bootstrap javascript files are served by including
 			//- them specifically here, instead of bootstrap-3.3.5.min.js

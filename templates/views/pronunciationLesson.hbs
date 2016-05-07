@@ -1,0 +1,33 @@
+<div class="container">
+	<div class="row">
+		<div class="col-sm-12">
+			<article>
+				<p><a href="/pronunciation-lessons">&larr; back to the pronunciation lessons</a></p>
+				<hr>
+				<header>
+					<h1>{{{data.pronunciationLesson.chineseTitle}}}, {{{data.pronunciationLesson.englishTitle}}}</h1>
+					<h5>
+						courseNo: {{{data.pronunciationLesson.courseNo}}}, lessonNo: {{{data.pronunciationLesson.lessonNo}}}
+					</h5>
+				</header>
+				<hr>
+				<div class="">
+					<h5>共 {{{data.lessonActivities.length}}} lessonActivities</h5>
+					{{# each data.lessonActivities}}
+					<div class="post">
+						<p class="lead">
+							<a href="/lesson-activities/{{{_id}}}">
+								index: {{{index}}}, type: {{{type}}}
+							</a>
+						</p>
+					</div>
+					{{/each}}
+				</div>
+				<hr>
+				<a href="/lesson-activities/new?courseNo={{{data.pronunciationLesson.courseNo}}}&lessonNo={{{data.pronunciationLesson.lessonNo}}}">
+					添加lessonActivity
+				</a>
+			</article>
+		</div>
+	</div>
+</div>

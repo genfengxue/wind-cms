@@ -1,0 +1,100 @@
+<div class="container" style="position: relative">
+	<div class="row">
+		<div class="col-sm-8 col-md-6">
+			<p><a href="/pronunciation-lessons/{{{data.lessonActivity.lesson._id}}}">&larr; back to the pronunciation lesson: {{{data.lessonActivity.lesson.englishTitle}}}</a></p>
+			{{#if data.lessonActivity.modified}}<p>updated at {{date data.lessonActivity.modified format='YYYY/MM/DD hh:mm:ss'}}</p>{{/if}}
+			<form method="post" enctype="multipart/form-data">
+				<input type="hidden" name="action" value="lesson-activity">
+				<input type="hidden" name="courseNo" value="{{{data.lessonActivity.courseNo}}}">
+				<input type="hidden" name="lessonNo" value="{{{data.lessonActivity.lessonNo}}}">
+				<div class="form-group {{#if validationErrors.type}}has-error{{/if}}">
+					<label>类型</label>
+					<select name="type" class="form-control" value="{{{formData.type}}}">
+						<option value="">(select one)</option>
+						{{#each types}}
+						<option value="{{value}}" {{#ifeq ../formData.type value}}selected{{else}}{{/ifeq}}>{{label}}</option>
+						{{/each}}
+					</select>
+				</div>
+				{{#ifeq filters.lessonActivity 'new'}}
+				<div class="form-group {{#if validationErrors.index}}has-error{{/if}}">
+					<label>序号</label>
+					<p>自动生成，规则：创建成功时在最大序号加1</p>
+				</div>
+				{{else}}
+				<div class="form-group {{#if validationErrors.index}}has-error{{/if}}">
+					<label>序号</label>
+					<input type="number" name="index" class="form-control" value="{{formData.index}}">
+				</div>
+				{{/ifeq}}
+				<div class="form-group {{#if validationErrors.description}}has-error{{/if}}">
+					<label>讲解／打Boss正文</label>
+					<textarea 
+						type="text" 
+						rows="4" 
+						name="form-group description" 
+						class="editable" 
+						style="border: 1px solid #ccc;border-radius: 4px; min-height: 100px; padding: 6px 12px;" 
+						value="{{formData.description}}">{{formData.description}}</textarea>
+				</div>
+				<div class="form-group {{#if validationErrors.readingText}}has-error{{/if}}">
+					<label>朗读正文</label>
+					<textarea type="text" rows="4" name="readingText" class="form-control" value="{{formData.readingText}}">{{formData.readingText}}</textarea>
+				</div>
+				<div class="form-group {{#if validationErrors.readingNote}}has-error{{/if}}">
+					<label>朗读注释</label>
+					<textarea type="text" rows="4" name="readingNote" class="form-control" value="{{formData.readingNote}}">{{formData.readingNote}}</textarea>
+				</div>
+				<div class="form-group {{#if validationErrors.audioUpload}}has-error{{/if}}">
+					<label>音频</label>{{formData.audioUpload.originalname}}
+					<input type="file" name="audioUpload_upload" class="form-control">
+				</div>
+				<div class="form-group {{#if validationErrors.videoUpload}}has-error{{/if}}">
+					<label>视频</label>{{formData.videoUpload.originalname}}
+					<input type="file" name="videoUpload_upload" class="form-control">
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">保存</button>
+				</div>
+			</form>
+		</div>
+	</div>
+	<div class="loading" style="
+		display: none;
+		position: absolute;
+		top: 0; left: 0; 
+		right: 0; bottom: 0;
+		background: #fff;
+		text-align: center;
+		font-size: 4rem;
+		opacity: 0.8;">
+		保存中。。。
+	</div>
+</div>
+<script type="text/javascript" src="/libs/medium-editor/dist/js/medium-editor.min.js"></script>
+<script type="text/javascript">
+	var loading = $('.loading');
+	var elements = document.querySelectorAll('.editable'),
+	editor = new MediumEditor(elements, {
+		toolbar: {
+	        /* These are the default options for the toolbar,
+	        if nothing is passed this is what is used */
+	        allowMultiParagraphSelection: true,
+	        buttons: ['bold'],
+	        diffLeft: 0,
+	        diffTop: -10,
+	        firstButtonClass: 'medium-editor-button-first',
+	        lastButtonClass: 'medium-editor-button-last',
+	        standardizeSelectionStart: false,
+	        static: false,
+	        relativeContainer: null,
+	        /* options which only apply when static is true */
+	        align: 'center',
+	        sticky: false,
+	        updateOnEmptySelection: false
+	    }
+	});
+	$('form').on('submit', function(e) {
+		loading.show();
+	});
+</script>
