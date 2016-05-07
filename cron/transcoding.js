@@ -49,6 +49,7 @@ function slice(lesson, srt, type) {
 				startTime = startTime > 0 ? startTime : 0;
 				var duration = moment.duration(endTimeStr) - startTime + after;
 				var localPath = getNormalName(lesson, sub, type) + suffix;
+        //根据字幕时间轴切分音频或视频
 				ffmpeg(filePath)
 				.output(localPath)
 				.seekInput(startTime / 1000)
@@ -498,13 +499,13 @@ exports = module.exports = () => {
 			theSubs = srt;
 			if (theLesson.hasAudio) {
 				return slice(theLesson, theSubs, 'audio');
-			}
+			}//切分音频，按照标准的文件名称生成/data/files/{课程号}_{课时号}_{句子号} 为后续的处理做准备
 			return;
 		})
 		.then(function() {
 			if (theLesson.hasAudio) {
 				return speeds(theLesson, theSubs, 'audio');
-			}
+			}//用上一步的输出文件来生成变速文件，文件名增加了 @rate 部分
 			return;
 		})
 		.then(function() {
