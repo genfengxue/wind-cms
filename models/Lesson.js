@@ -26,8 +26,7 @@ Lesson.add({
 		dest: '/data/files',
 		prefix: '/files',
 		filename: function(item, file){
-			var name = item.courseNo + '_' + item.lessonNo + '_audio';
-			return name + '.' + file.extension;
+			return file.originalname;
 		}
 	},
 	video: {
@@ -35,8 +34,7 @@ Lesson.add({
 		dest: '/data/files',
 		prefix: '/files',
 		filename: function(item, file){
-			var name = item.courseNo + '_' + item.lessonNo + '_video';
-			return name + '.' + file.extension;
+			return file.originalname;
 		}
 	},
 	videoMuted: {
@@ -44,8 +42,7 @@ Lesson.add({
 		dest: '/data/files',
 		prefix: '/files',
 		filename: function(item, file){
-			var name = item.courseNo + '_' + item.lessonNo + '_videoMuted';
-			return name + '.' + file.extension;
+			return file.originalname;
 		}
 	},
 	subtitle: {
@@ -53,13 +50,14 @@ Lesson.add({
 		dest: '/data/files',
 		prefix: '/files',
 		filename: function(item, file){
-			var name = item.courseNo + '_' + item.lessonNo + '_subtitle';
-			return name + '.' + file.extension;
+			return file.originalname;
 		}
 	},
 	transVideos: { type: Types.TextArray },
 	videoPath: { type: String },
 });
+
+Lesson.schema.index({courseNo: 1, lessonNo: 1}, {unique: true});
 
 Lesson.schema.virtual('hasAudio').get(function() {
 	return this.audio && this.audio.filename;
