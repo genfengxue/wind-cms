@@ -511,13 +511,13 @@ exports = module.exports = () => {
 		.then(function() {
 			if (theLesson.hasAudio) {
 				return converts(theLesson, theSubs, 'audio');
-			}
+			}//把分段之后的音频转成wav ogg格式
 			return;
 		})
 		.then(function() {
 			if (theLesson.hasVideo) {
-				return speedsVideo(theLesson);//和speeds有什么不一样
-			}
+				return speedsVideo(theLesson);
+			}//未分段的视频按照rates变速，需要同时制定setpts和atempo两个参数
 			return;
 		})
 		// .then(function(videoPathes) {
@@ -528,8 +528,8 @@ exports = module.exports = () => {
 		// })
 		.then(function() {
 			if (theLesson.hasVideoMuted) {
-				return speedsMutedVideo(theLesson);//这个方法是干嘛的
-			}
+				return speedsMutedVideo(theLesson);
+			}//变速无声视频，不需要处理音频流
 			return;
 		})
 		// .then(function(videoPathes) {
