@@ -254,7 +254,7 @@ function uploadFiles(lesson, sentence, type) {
 				return reject(err);
 			}
 			resolve(qiniuHost + '/' + randomStr + localPath);
-		});
+		});//传完之后将最后的文件名返回
 	});
 }
 
