@@ -159,6 +159,15 @@
 					legend: {
 						data:['数量']
 					},
+					toolbox: {
+						show: true,
+						feature: {
+							dataView: {show: true, readOnly: false},
+							magicType: {show: true, type: ['line', 'bar', 'stack', 'tiled']},
+							restore: {show: true},
+							saveAsImage: {show: true}
+						}
+					},
 					xAxis: {
 						data: sections
 					},
