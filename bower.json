@@ -16,6 +16,8 @@
     "tests"
   ],
   "dependencies": {
-    "medium-editor": "^5.16.1"
+    "medium-editor": "^5.16.1",
+    "echarts": "^3.1.9",
+    "bootstrap-datepicker": "^1.6.1"
   }
 }

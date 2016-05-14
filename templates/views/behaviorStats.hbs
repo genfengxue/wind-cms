@@ -1,0 +1,179 @@
+<link rel="stylesheet" type="text/css" href="/libs/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css">
+<div class="container" id="loaded-time">
+	<div class="row">
+		<h3 class="col-md-12">音频加载时间统计</h3>
+		<div class="col-sm-12 form-inline">
+			<div class="form-group">
+				<label>from:</label>
+				<div class="input-group date" data-provide="datepicker">
+					<input name="from" type="text" class="form-control" data-autoclose="true">
+					<div class="input-group-addon">
+						<span class="glyphicon glyphicon-th"></span>
+					</div>
+				</div>
+			</div>
+			<div class="form-group">
+				<label>from:</label>
+				<div class="input-group date" data-provide="datepicker">
+					<input name="to" type="text" class="form-control" data-autoclose="true">
+					<div class="input-group-addon">
+						<span class="glyphicon glyphicon-th"></span>
+					</div>
+				</div>
+			</div>
+			<button class="btn btn-primary send">
+				Send
+			</button>
+		</div>
+		<div class="col-sm-12">
+			<div id="main" style="width: 600px;height:400px;"></div>
+		</div>
+		<div class="col-sm-12">
+			<div id="main2" style="width: 600px;height:400px;"></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript" src="/libs/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="/libs/echarts/dist/echarts.min.js"></script>
+<script type="text/javascript">
+	$(function() {
+		var sendBtn = $('#loaded-time .send');
+		var fromDp = $('#loaded-time [name=from]');
+		var toDp = $('#loaded-time [name=to]');
+		sendBtn.on('click', function() {
+			var fromDate = fromDp.datepicker('getDate');
+			var toDate = toDp.datepicker('getDate');
+			$.get('/api/loaded-time', {fromDate: fromDate, toDate: toDate})
+			.then(function(data) {
+				console.log(data);
+				data.sort(function(pre, next) {
+					return pre.v - next.v;
+				});
+				var indexes = data.map(function(item, index) {
+					return index;
+				})
+				data = data.map(function(item) {
+					return item.v;
+				});
+				var myChart = echarts.init(document.getElementById('main'));
+
+				// 指定图表的配置项和数据
+				var option = {
+					tooltip: {
+						trigger: 'axis',
+						position: function (pt) {
+							return [pt[0], '10%'];
+						}
+					},
+					title: {
+						left: 'center',
+						text: '耗时图',
+					},
+					legend: {
+						top: 'bottom',
+						data:['意向']
+					},
+					toolbox: {
+						show: true,
+						feature: {
+							dataView: {show: true, readOnly: false},
+							magicType: {show: true, type: ['line', 'bar', 'stack', 'tiled']},
+							restore: {show: true},
+							saveAsImage: {show: true}
+						}
+					},
+					xAxis: {
+						type: 'category',
+						boundaryGap: false,
+						data: indexes
+					},
+					yAxis: {
+						type: 'value',
+						boundaryGap: [0, '100%']
+					},
+					dataZoom: [{
+						type: 'inside',
+						start: 0,
+						end: 10
+					}, {
+						start: 0,
+						end: 10
+					}],
+					series: [
+						{
+							name:'模拟数据',
+							type:'line',
+							smooth:true,
+							symbol: 'none',
+							sampling: 'average',
+							itemStyle: {
+								normal: {
+									color: 'rgb(255, 70, 131)'
+								}
+							},
+							areaStyle: {
+								normal: {
+									color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+										offset: 0,
+										color: 'rgb(255, 158, 68)'
+									}, {
+										offset: 1,
+										color: 'rgb(255, 70, 131)'
+									}])
+								}
+							},
+							data: data
+						}
+					]
+				};
+
+				// 使用刚指定的配置项和数据显示图表。
+				myChart.setOption(option);
+
+				var avg = data.reduce(function(cur, pre) {
+					return cur + pre;
+				}) / data.length;
+				$('.main').append('avg: ' + avg);
+				$('.main').append('min: ' + data[0]);
+				$('.main').append('max: ' + data[data.length - 1]);
+				console.log('avg: ' + avg);
+				console.log('min: ' + data[0]);
+				console.log('max: ' + data[data.length - 1]);
+
+				var sectionNum = Math.ceil(data[data.length - 1] * 1000 / 100);
+				var sections = [];
+				for (var i = 0; i < sectionNum; i++) {
+					sections.push(i * 100 + '~' + (i + 1) * 100);
+				}
+				var counts = [];
+				for (var i = 0; i < sectionNum; i++) {
+					counts.push(data.filter(function(x) {
+						return x * 1000 >= i * 100 && x * 1000 <= (i + 1) * 100;
+					}).length);
+				}
+				var opt2 = {
+					title: {
+						text: '分布'
+					},
+					tooltip: {},
+					legend: {
+						data:['数量']
+					},
+					xAxis: {
+						data: sections
+					},
+					yAxis: {},
+					series: [{
+						name: '数量',
+						type: 'bar',
+						data: counts
+					}]
+				};
+				var myChart2 = echarts.init(document.getElementById('main2'));
+				myChart2.setOption(opt2);
+			}, function(err) {
+				console.log(err);
+			});
+		});
+	});
+</script>
