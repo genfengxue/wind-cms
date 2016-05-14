@@ -26,6 +26,9 @@
 			</button>
 		</div>
 		<div class="col-sm-12">
+			<div class="text"></div>
+		</div>
+		<div class="col-sm-12">
 			<div id="main" style="width: 600px;height:400px;"></div>
 		</div>
 		<div class="col-sm-12">
@@ -133,9 +136,9 @@
 				var avg = data.reduce(function(cur, pre) {
 					return cur + pre;
 				}) / data.length;
-				$('.main').append('avg: ' + avg);
-				$('.main').append('min: ' + data[0]);
-				$('.main').append('max: ' + data[data.length - 1]);
+				$('.text').append('avg: ' + avg.toFixed(2));
+				$('.text').append(' min: ' + data[0]);
+				$('.text').append(' max: ' + data[data.length - 1]);
 				console.log('avg: ' + avg);
 				console.log('min: ' + data[0]);
 				console.log('max: ' + data[data.length - 1]);
@@ -168,6 +171,14 @@
 							saveAsImage: {show: true}
 						}
 					},
+					dataZoom: [{
+						type: 'inside',
+						start: 10,
+						end: 50
+					}, {
+						start: 10,
+						end: 50
+					}],
 					xAxis: {
 						data: sections
 					},
